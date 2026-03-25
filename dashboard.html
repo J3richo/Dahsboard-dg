@@ -1,0 +1,1199 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <title>Suivi DG · Dossiers de Sortie</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --glass:        rgba(255,255,255,0.09);
+      --glass-hover:  rgba(255,255,255,0.15);
+      --glass-active: rgba(255,255,255,0.22);
+      --glass-border: rgba(255,255,255,0.18);
+      --glass-shadow: 0 8px 40px rgba(0,0,0,0.28), inset 0 1px 0 rgba(255,255,255,0.12);
+      --blur: blur(28px);
+      --r-xl: 26px; --r-lg: 18px; --r-md: 13px; --r-sm: 9px;
+      --blue:   #007AFF; --purple: #BF5AF2; --green: #30D158;
+      --orange: #FF9F0A; --red:    #FF453A; --teal:  #64D2FF;
+      --yellow: #FFD60A;
+      --t1: rgba(255,255,255,0.95);
+      --t2: rgba(255,255,255,0.62);
+      --t3: rgba(255,255,255,0.38);
+      --nav-h: 62px;
+    }
+
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      min-height: 100dvh;
+      color: var(--t1);
+      background: #0a0a18;
+      overflow-x: hidden;
+    }
+
+    /* AURORA */
+    .aurora { position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; }
+    .aurora::before, .aurora::after, .aurora span { content: ''; display: block; position: absolute; border-radius: 50%; }
+    .aurora::before {
+      width: 70vw; height: 70vw; max-width: 900px; max-height: 900px;
+      background: radial-gradient(circle, rgba(90,30,180,0.55) 0%, transparent 65%);
+      top: -25%; left: -15%; animation: aurora1 22s ease-in-out infinite;
+    }
+    .aurora::after {
+      width: 55vw; height: 55vw; max-width: 750px; max-height: 750px;
+      background: radial-gradient(circle, rgba(0,100,255,0.45) 0%, transparent 65%);
+      bottom: -15%; right: -10%; animation: aurora2 28s ease-in-out infinite;
+    }
+    .aurora span {
+      width: 45vw; height: 45vw; max-width: 600px; max-height: 600px;
+      background: radial-gradient(circle, rgba(0,180,200,0.25) 0%, transparent 65%);
+      top: 38%; left: 35%; animation: aurora3 35s ease-in-out infinite;
+    }
+    @keyframes aurora1 { 0%,100%{transform:translate(0,0) scale(1)} 40%{transform:translate(6%,4%) scale(1.07)} 70%{transform:translate(-4%,6%) scale(0.94)} }
+    @keyframes aurora2 { 0%,100%{transform:translate(0,0) scale(1)} 35%{transform:translate(-5%,-3%) scale(1.05)} 70%{transform:translate(4%,-6%) scale(0.96)} }
+    @keyframes aurora3 { 0%,100%{transform:translate(0,0) scale(1)} 50%{transform:translate(-6%,5%) scale(1.1)} }
+
+    /* LAYOUT */
+    #app { position: relative; z-index: 1; min-height: 100dvh; display: flex; flex-direction: column; }
+
+    /* TOP NAV */
+    .topnav {
+      height: var(--nav-h); display: flex; align-items: center; padding: 0 20px; gap: 14px;
+      background: rgba(0,0,0,0.22); backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);
+      border-bottom: 1px solid var(--glass-border); position: sticky; top: 0; z-index: 100;
+    }
+    .logo { font-size: 17px; font-weight: 800; letter-spacing: -0.5px; white-space: nowrap; flex-shrink: 0; }
+    .logo em { color: var(--blue); font-style: normal; }
+
+    .month-tabs { display: flex; align-items: center; gap: 5px; overflow-x: auto; flex: 1; scrollbar-width: none; padding: 4px 0; }
+    .month-tabs::-webkit-scrollbar { display: none; }
+    .month-tab {
+      display: flex; align-items: center; gap: 5px; flex-shrink: 0;
+      padding: 5px 13px; border-radius: 20px; font-size: 12px; font-weight: 600;
+      cursor: pointer; border: 1px solid transparent; color: var(--t2);
+      transition: all 0.18s; white-space: nowrap; background: transparent;
+    }
+    .month-tab:hover { background: var(--glass); color: var(--t1); }
+    .month-tab.active { background: var(--blue); color: white; border-color: rgba(0,122,255,0.4); }
+    .month-del {
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 14px; height: 14px; border-radius: 50%; font-size: 9px;
+      background: rgba(255,255,255,0.25); cursor: pointer; flex-shrink: 0;
+    }
+    .month-del:hover { background: var(--red); }
+
+    .nav-actions { display: flex; gap: 8px; align-items: center; flex-shrink: 0; }
+    .btn {
+      display: inline-flex; align-items: center; gap: 5px; padding: 7px 15px;
+      border-radius: 11px; font-size: 12px; font-weight: 700; cursor: pointer;
+      border: 1px solid var(--glass-border); background: var(--glass); color: var(--t1);
+      transition: all 0.18s; white-space: nowrap; font-family: inherit;
+    }
+    .btn:hover { background: var(--glass-hover); transform: translateY(-1px); }
+    .btn:active { transform: translateY(0); }
+    .btn-primary { background: var(--blue); border-color: rgba(0,122,255,0.5); color: white; }
+    .btn-primary:hover { background: #0068e0; }
+
+    .view-sw { display: flex; background: rgba(0,0,0,0.3); border-radius: 9px; padding: 3px; border: 1px solid var(--glass-border); }
+    .view-btn {
+      padding: 5px 13px; border-radius: 7px; font-size: 11px; font-weight: 700;
+      cursor: pointer; color: var(--t2); transition: all 0.18s; border: none;
+      background: transparent; white-space: nowrap; font-family: inherit;
+    }
+    .view-btn.active { background: var(--glass-active); color: var(--t1); }
+
+    /* MAIN */
+    main { flex: 1; padding: 24px 20px; max-width: 1320px; width: 100%; margin: 0 auto; }
+
+    /* GLASS CARD */
+    .card {
+      background: var(--glass); backdrop-filter: var(--blur); -webkit-backdrop-filter: var(--blur);
+      border: 1px solid var(--glass-border); border-radius: var(--r-xl); box-shadow: var(--glass-shadow);
+      transition: background 0.18s;
+    }
+    .card:hover { background: var(--glass-hover); }
+
+    /* KPI */
+    .kpi-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 14px; margin-bottom: 18px; }
+    .kpi-card { padding: 22px 20px; }
+    .kpi-icon { font-size: 26px; margin-bottom: 10px; }
+    .kpi-value { font-size: 38px; font-weight: 800; letter-spacing: -2px; line-height: 1; margin-bottom: 3px; }
+    .kpi-label { font-size: 11px; font-weight: 600; color: var(--t2); text-transform: uppercase; letter-spacing: 0.6px; }
+    .kpi-sub { font-size: 11px; color: var(--t3); margin-top: 5px; }
+
+    /* CHARTS */
+    .charts-grid { display: grid; grid-template-columns: 1.6fr 1fr; gap: 14px; margin-bottom: 18px; }
+    .chart-card { padding: 20px; }
+    .chart-title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.7px; color: var(--t2); margin-bottom: 16px; }
+
+    /* STEP FUNNEL */
+    .step-funnel { display: flex; flex-direction: column; gap: 9px; }
+    .step-row { display: flex; align-items: center; gap: 10px; }
+    .step-name { font-size: 10px; font-weight: 600; color: var(--t2); width: 105px; text-align: right; flex-shrink: 0; text-transform: uppercase; letter-spacing: 0.3px; }
+    .step-bar-wrap { flex: 1; height: 26px; background: rgba(255,255,255,0.05); border-radius: 7px; overflow: hidden; }
+    .step-bar {
+      height: 100%; border-radius: 7px; display: flex; align-items: center; padding-left: 10px;
+      transition: width 0.9s cubic-bezier(0.4,0,0.2,1); min-width: 2px;
+      font-size: 11px; font-weight: 700; color: rgba(255,255,255,0.9);
+    }
+    .step-count { font-size: 11px; font-weight: 600; color: var(--t3); width: 28px; flex-shrink: 0; }
+
+    /* SECTION HEADER */
+    .section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+    .section-title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.7px; color: var(--t2); }
+    .badge { padding: 3px 9px; border-radius: 20px; font-size: 10px; font-weight: 700; background: var(--glass); border: 1px solid var(--glass-border); }
+
+    /* DOSSIER CARDS */
+    .dossier-grid { display: grid; grid-template-columns: repeat(auto-fill,minmax(300px,1fr)); gap: 13px; }
+    .dossier-card {
+      padding: 17px; cursor: pointer; border-radius: var(--r-lg);
+      transition: all 0.2s; user-select: none;
+    }
+    .dossier-card:hover { background: var(--glass-hover); transform: translateY(-2px); box-shadow: 0 14px 50px rgba(0,0,0,0.35); }
+    .dossier-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 13px; gap: 8px; }
+    .dossier-name { font-size: 15px; font-weight: 700; letter-spacing: -0.3px; }
+    .dossier-meta { font-size: 11px; color: var(--t2); margin-top: 2px; }
+    .dossier-date { font-size: 10px; font-weight: 700; padding: 4px 9px; border-radius: 20px; border: 1px solid var(--glass-border); color: var(--t2); white-space: nowrap; flex-shrink: 0; }
+    .dossier-date.overdue { border-color: rgba(255,69,58,0.5); color: var(--red); background: rgba(255,69,58,0.1); }
+    .dossier-date.soon   { border-color: rgba(255,159,10,0.5); color: var(--orange); background: rgba(255,159,10,0.1); }
+
+    /* STEPS TRACK */
+    .steps-track { display: flex; align-items: flex-start; position: relative; }
+    .step-item { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px; position: relative; }
+    .step-connector {
+      position: absolute; top: 9px; left: 50%; right: -50%; height: 2px;
+      background: rgba(255,255,255,0.08); z-index: 0;
+    }
+    .step-item:last-child .step-connector { display: none; }
+    .step-item.done .step-connector { background: linear-gradient(90deg, rgba(48,209,88,0.6), rgba(48,209,88,0.15)); }
+    .step-dot {
+      width: 18px; height: 18px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.12);
+      background: rgba(255,255,255,0.05); display: flex; align-items: center; justify-content: center;
+      font-size: 8px; position: relative; z-index: 1; transition: all 0.25s; flex-shrink: 0;
+    }
+    .step-item.done .step-dot { background: var(--green); border-color: rgba(48,209,88,0.5); box-shadow: 0 0 8px rgba(48,209,88,0.5); }
+    .step-item.noted .step-dot { background: var(--orange); border-color: rgba(255,159,10,0.5); box-shadow: 0 0 8px rgba(255,159,10,0.5); }
+    .step-lbl { font-size: 7px; font-weight: 700; color: var(--t3); text-transform: uppercase; letter-spacing: 0.3px; text-align: center; line-height: 1.2; }
+    .step-item.done .step-lbl  { color: rgba(48,209,88,0.8); }
+    .step-item.noted .step-lbl { color: rgba(255,159,10,0.8); }
+
+    .prog-wrap { height: 2px; background: rgba(255,255,255,0.07); border-radius: 99px; margin-top: 10px; overflow: hidden; }
+    .prog-bar { height: 100%; border-radius: 99px; background: linear-gradient(90deg, var(--blue), var(--purple)); transition: width 0.8s cubic-bezier(0.4,0,0.2,1); }
+    .prog-bar.done { background: linear-gradient(90deg, var(--green), var(--teal)); }
+
+    /* EMPTY STATE */
+    .empty { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 80px 20px; gap: 14px; text-align: center; }
+    .empty-icon { font-size: 52px; opacity: 0.35; }
+    .empty-title { font-size: 20px; font-weight: 700; color: var(--t2); }
+    .empty-sub { font-size: 13px; color: var(--t3); max-width: 280px; line-height: 1.5; }
+
+    /* MODAL */
+    .modal-overlay {
+      position: fixed; inset: 0; z-index: 200;
+      background: rgba(0,0,0,0.55); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+      display: flex; align-items: center; justify-content: center; padding: 20px;
+      opacity: 0; pointer-events: none; transition: opacity 0.22s;
+    }
+    .modal-overlay.open { opacity: 1; pointer-events: all; }
+    .modal {
+      width: 100%; max-width: 540px;
+      background: rgba(14,14,30,0.88); backdrop-filter: blur(40px); -webkit-backdrop-filter: blur(40px);
+      border: 1px solid var(--glass-border); border-radius: var(--r-xl);
+      box-shadow: 0 28px 80px rgba(0,0,0,0.55); overflow: hidden;
+      transform: translateY(22px) scale(0.97); transition: transform 0.22s; max-height: 88dvh; overflow-y: auto;
+    }
+    .modal-overlay.open .modal { transform: translateY(0) scale(1); }
+    .modal-head {
+      padding: 22px 22px 16px; border-bottom: 1px solid var(--glass-border);
+      display: flex; justify-content: space-between; align-items: flex-start;
+    }
+    .modal-title { font-size: 22px; font-weight: 800; letter-spacing: -0.5px; }
+    .modal-sub { font-size: 12px; color: var(--t2); margin-top: 3px; }
+    .modal-close {
+      width: 30px; height: 30px; border-radius: 50%; background: var(--glass); border: 1px solid var(--glass-border);
+      color: var(--t1); display: flex; align-items: center; justify-content: center;
+      cursor: pointer; font-size: 14px; flex-shrink: 0; transition: all 0.18s;
+    }
+    .modal-close:hover { background: var(--glass-hover); }
+    .modal-body { padding: 22px; }
+    .modal-info { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 22px; }
+    .info-lbl { font-size: 9px; font-weight: 700; color: var(--t3); text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 3px; }
+    .info-val { font-size: 14px; font-weight: 600; }
+    .modal-steps-title { font-size: 9px; font-weight: 700; color: var(--t3); text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 12px; }
+    .modal-steps { display: flex; flex-direction: column; gap: 9px; }
+    .modal-step {
+      display: flex; flex-direction: column; padding: 13px;
+      border-radius: var(--r-md); border: 1px solid rgba(255,255,255,0.08); background: rgba(255,255,255,0.04);
+      transition: all 0.15s; user-select: none;
+    }
+    .modal-step.done       { border-color: rgba(48,209,88,0.25);  background: rgba(48,209,88,0.07); }
+    .modal-step.noted      { border-color: rgba(255,159,10,0.25); background: rgba(255,159,10,0.07); }
+    .modal-step.note-only  { border-color: rgba(255,159,10,0.18); background: rgba(255,159,10,0.04); }
+    .ms-row {
+      display: flex; align-items: center; gap: 12px; cursor: pointer;
+      border-radius: 6px; transition: background 0.12s;
+    }
+    .ms-row:hover { background: rgba(255,255,255,0.05); }
+    .modal-step.done  .ms-row:hover { background: rgba(48,209,88,0.08); }
+    .modal-step.noted .ms-row:hover { background: rgba(255,159,10,0.08); }
+    .ms-note-btn {
+      flex-shrink: 0; width: 28px; height: 28px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.12);
+      background: rgba(255,255,255,0.05); color: var(--t2); font-size: 13px; display: flex;
+      align-items: center; justify-content: center; cursor: pointer; transition: all 0.15s; font-family: inherit;
+    }
+    .ms-note-btn:hover { background: rgba(255,159,10,0.2); border-color: rgba(255,159,10,0.4); color: var(--orange); }
+    .ms-note-btn.active { background: rgba(255,159,10,0.2); border-color: rgba(255,159,10,0.4); color: var(--orange); }
+    .ms-note-area { display: none; margin-top: 9px; }
+    .ms-note-area.open { display: block; }
+    .modal-step-note-input {
+      width: 100%; padding: 7px 10px;
+      background: rgba(0,0,0,0.25); border: 1px solid rgba(255,255,255,0.15); border-radius: 8px;
+      color: var(--t1); font-size: 12px; font-family: inherit; outline: none;
+    }
+    .modal-step-note-input::placeholder { color: var(--t3); }
+    .modal-step-note-input:focus { border-color: rgba(255,159,10,0.5); }
+    .ms-icon { width: 34px; height: 34px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 15px; flex-shrink: 0; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.08); }
+    .modal-step.done      .ms-icon { background: rgba(48,209,88,0.12);  border-color: rgba(48,209,88,0.35); }
+    .modal-step.noted     .ms-icon { background: rgba(255,159,10,0.12); border-color: rgba(255,159,10,0.35); }
+    .modal-step.note-only .ms-icon { background: rgba(255,159,10,0.07); border-color: rgba(255,159,10,0.25); }
+    .ms-info { flex: 1; min-width: 0; }
+    .ms-name { font-size: 13px; font-weight: 600; }
+    .ms-status { font-size: 11px; color: var(--t3); margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .modal-step.done       .ms-status { color: var(--green); }
+    .modal-step.noted      .ms-status { color: var(--orange); }
+    .modal-step.note-only  .ms-status { color: var(--orange); }
+    .ms-check { font-size: 17px; flex-shrink: 0; }
+    /* Delete button in modal header */
+    .modal-del-btn {
+      width: 30px; height: 30px; border-radius: 50%; background: rgba(255,69,58,0.1);
+      border: 1px solid rgba(255,69,58,0.25); color: var(--red); display: flex; align-items: center;
+      justify-content: center; cursor: pointer; font-size: 14px; flex-shrink: 0; transition: all 0.18s;
+    }
+    .modal-del-btn:hover { background: rgba(255,69,58,0.25); border-color: rgba(255,69,58,0.5); }
+    /* ── FLAG ICONS on card ──────────────────────────── */
+    .flag-icon {
+      display: inline-flex; align-items: center; justify-content: center;
+      font-size: 14px; margin-right: 3px; line-height: 1;
+      filter: drop-shadow(0 1px 3px rgba(0,0,0,0.4));
+      cursor: default;
+    }
+    .dossier-meta .flags-inline { display: inline; }
+    /* ── FLAG TOGGLE BUTTONS in modal ────────────────── */
+    .modal-flags-section { margin-bottom: 18px; }
+    .modal-flags-section .info-lbl { margin-bottom: 8px; }
+    .flags-toggle-row { display: flex; gap: 8px; flex-wrap: wrap; }
+    .flag-toggle-btn {
+      display: inline-flex; align-items: center; gap: 5px;
+      padding: 5px 14px; border-radius: 20px; font-size: 11px; font-weight: 700;
+      border: 1px solid rgba(255,255,255,0.12); background: rgba(255,255,255,0.05);
+      color: var(--t3); cursor: pointer; transition: all 0.15s; font-family: inherit;
+      letter-spacing: 0.2px;
+    }
+    .flag-toggle-btn:hover { background: rgba(255,255,255,0.1); color: var(--t1); }
+    .flag-toggle-btn.active-vente  { background: rgba(48,209,88,0.18);  border-color: rgba(48,209,88,0.5);  color: var(--green);  }
+    .flag-toggle-btn.active-litige { background: rgba(255,69,58,0.18);  border-color: rgba(255,69,58,0.5);  color: var(--red);    }
+    .flag-toggle-btn.active-conge  { background: rgba(255,159,10,0.18); border-color: rgba(255,159,10,0.5); color: var(--orange); }
+    /* ────────────────────────────────────────────────── */
+    /* Tooltip on card step dots */
+    .step-item[data-tip] { position: relative; }
+    .step-item[data-tip]::before {
+      content: attr(data-tip);
+      position: absolute; bottom: calc(100% + 7px); left: 50%; transform: translateX(-50%);
+      background: rgba(12,12,28,0.97); border: 1px solid rgba(255,255,255,0.16);
+      border-radius: 9px; padding: 5px 10px; font-size: 11px; font-weight: 500; color: var(--t1);
+      white-space: nowrap; max-width: 180px; overflow: hidden; text-overflow: ellipsis;
+      pointer-events: none; opacity: 0; transition: opacity 0.15s; z-index: 50;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.35);
+    }
+    .step-item[data-tip]::after {
+      content: ''; position: absolute; bottom: calc(100% + 1px); left: 50%; transform: translateX(-50%);
+      border: 5px solid transparent; border-top-color: rgba(255,255,255,0.16);
+      pointer-events: none; opacity: 0; transition: opacity 0.15s; z-index: 50;
+    }
+    .step-item[data-tip]:hover::before,
+    .step-item[data-tip]:hover::after { opacity: 1; }
+    /* Note-only step dot on card */
+    .step-item.note-only .step-dot { background: rgba(255,159,10,0.25); border-color: rgba(255,159,10,0.5); font-size: 8px; }
+    .step-item.note-only .step-lbl { color: rgba(255,159,10,0.75); }
+    /* NC step dot on card */
+    .step-item.nc .step-dot { background: rgba(100,210,255,0.18); border-color: rgba(100,210,255,0.45); font-size: 7px; font-weight: 800; letter-spacing: -0.5px; }
+    .step-item.nc .step-lbl { color: rgba(100,210,255,0.75); }
+    .step-item.nc .step-connector { background: linear-gradient(90deg, rgba(100,210,255,0.5), rgba(100,210,255,0.15)); }
+    /* NC modal step */
+    .modal-step.nc { border-color: rgba(100,210,255,0.25); background: rgba(100,210,255,0.06); }
+    .modal-step.nc:hover { background: rgba(100,210,255,0.1); }
+    .modal-step.nc .ms-icon { background: rgba(100,210,255,0.1); border-color: rgba(100,210,255,0.3); }
+    .modal-step.nc .ms-status { color: var(--teal); }
+    /* NC toggle button */
+    .ms-nc-btn {
+      flex-shrink: 0; padding: 0 9px; height: 28px; border-radius: 8px;
+      border: 1px solid rgba(255,255,255,0.12); background: rgba(255,255,255,0.05);
+      color: var(--t3); font-size: 10px; font-weight: 800; letter-spacing: 0.5px;
+      cursor: pointer; transition: all 0.15s; font-family: inherit;
+    }
+    .ms-nc-btn:hover { background: rgba(100,210,255,0.18); border-color: rgba(100,210,255,0.4); color: var(--teal); }
+    .ms-nc-btn.active { background: rgba(100,210,255,0.18); border-color: rgba(100,210,255,0.4); color: var(--teal); }
+
+    /* SEARCH + FILTER */
+    .search-bar {
+      display: flex; align-items: center; gap: 9px; padding: 10px 15px;
+      background: var(--glass); border: 1px solid var(--glass-border); border-radius: var(--r-md);
+      backdrop-filter: var(--blur); -webkit-backdrop-filter: var(--blur); margin-bottom: 14px;
+    }
+    .search-input { flex: 1; background: none; border: none; outline: none; font-size: 13px; font-family: inherit; color: var(--t1); }
+    .search-input::placeholder { color: var(--t3); }
+    .filter-row { display: flex; gap: 7px; flex-wrap: wrap; margin-bottom: 18px; }
+    .chip {
+      padding: 5px 13px; border-radius: 20px; font-size: 11px; font-weight: 700; cursor: pointer;
+      border: 1px solid var(--glass-border); background: var(--glass); color: var(--t2); transition: all 0.15s;
+    }
+    .chip:hover { background: var(--glass-hover); color: var(--t1); }
+    .chip.active { background: rgba(0,122,255,0.18); border-color: rgba(0,122,255,0.45); color: var(--blue); }
+
+    /* TOAST */
+    .toast {
+      position: fixed; bottom: 22px; left: 50%; transform: translateX(-50%) translateY(70px);
+      background: rgba(18,18,36,0.96); backdrop-filter: blur(20px); border: 1px solid var(--glass-border);
+      border-radius: var(--r-md); padding: 11px 18px; font-size: 13px; font-weight: 600;
+      z-index: 300; transition: transform 0.3s cubic-bezier(0.4,0,0.2,1); white-space: nowrap;
+    }
+    .toast.show { transform: translateX(-50%) translateY(0); }
+    .toast.success { border-color: rgba(48,209,88,0.4); }
+    .toast.error   { border-color: rgba(255,69,58,0.4); }
+
+    /* SECTION SPACING */
+    .mb18 { margin-bottom: 18px; }
+
+    /* RESPONSIVE */
+    @media (max-width: 1024px) {
+      .kpi-grid { grid-template-columns: repeat(2,1fr); }
+      .charts-grid { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 640px) {
+      main { padding: 14px 12px; }
+      .kpi-grid { grid-template-columns: repeat(2,1fr); gap: 10px; }
+      .kpi-card { padding: 15px 13px; }
+      .kpi-value { font-size: 30px; }
+      .topnav { padding: 0 12px; gap: 8px; }
+      .logo { font-size: 15px; }
+      .dossier-grid { grid-template-columns: 1fr; }
+      .view-btn { font-size: 10px; padding: 4px 10px; }
+      .btn { padding: 6px 11px; font-size: 11px; }
+      .modal { border-radius: var(--r-lg) var(--r-lg) 0 0; }
+      .modal-overlay { align-items: flex-end; padding: 0; }
+      .modal-info { grid-template-columns: 1fr 1fr; }
+      .step-name { width: 80px; font-size: 9px; }
+    }
+    @media (max-width: 420px) {
+      .kpi-grid { grid-template-columns: repeat(2,1fr); }
+      .charts-grid { grid-template-columns: 1fr; }
+    }
+
+    #file-input { display: none; }
+    ::-webkit-scrollbar { width: 5px; height: 5px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); border-radius: 99px; }
+    ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.22); }
+  </style>
+</head>
+<body>
+  <div class="aurora"><span></span></div>
+  <div id="app">
+    <nav class="topnav">
+      <div class="logo">Suivi <em>DG</em></div>
+      <div class="month-tabs" id="month-tabs"></div>
+      <div class="nav-actions">
+        <div class="view-sw">
+          <button class="view-btn active" id="btn-dash" onclick="setView('dashboard')">Tableau de bord</button>
+          <button class="view-btn" id="btn-suivi" onclick="setView('suivi')">Suivi détaillé</button>
+        </div>
+        <button class="btn btn-primary" onclick="document.getElementById('file-input').click()">↑ Importer</button>
+      </div>
+    </nav>
+    <main id="main-content"></main>
+  </div>
+
+  <!-- MODAL -->
+  <div class="modal-overlay" id="modal-overlay">
+    <div class="modal" id="modal">
+      <div class="modal-head">
+        <div>
+          <div class="modal-title" id="modal-title"></div>
+          <div class="modal-sub"   id="modal-sub"></div>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center;flex-shrink:0">
+          <button class="modal-del-btn" id="modal-del" title="Supprimer ce dossier">🗑</button>
+          <button class="modal-close"   id="modal-close">✕</button>
+        </div>
+      </div>
+      <div class="modal-body" id="modal-body"></div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+  <input type="file" id="file-input" accept=".xlsx,.xls">
+
+  <!-- CDN Libraries -->
+  <script src="https://unpkg.com/xlsx/dist/xlsx.full.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js/dist/chart.umd.min.js"></script>
+
+  <script>
+  // ──────────────────────────────────────────────
+  //  STATE
+  // ──────────────────────────────────────────────
+  const SK = 'suivi-dg-v2';
+  let S = {
+    data:        {},   // { "2026-03": { label, dossiers[] } }
+    activeMonth: null,
+    view:        'dashboard',
+    filter:      '',
+    filterStatus:'all',
+  };
+
+  const FLAGS = [
+    { key:'vente',  icon:'💰', label:'En vente', cls:'vente'  },
+    { key:'litige', icon:'⚖️', label:'Litige',   cls:'litige' },
+    { key:'conge',  icon:'🔑', label:'Congé',    cls:'conge'  },
+  ];
+
+  const STEPS = [
+    { key:'edlRecu',     lbl:'EDL',   full:'État des lieux reçu',   icon:'📋' },
+    { key:'comparatif',  lbl:'COMP',  full:'Comparatif réalisé',    icon:'📊' },
+    { key:'devis',       lbl:'DEVIS', full:'Devis établi',          icon:'🔧' },
+    { key:'cpteDepart',  lbl:'CPTE',  full:'Compte départ',         icon:'💶' },
+    { key:'restitution', lbl:'REST',  full:'Restitution effectuée', icon:'✅' },
+  ];
+  const STEP_COLORS = ['#30D158','#64D2FF','#BF5AF2','#FF9F0A','#007AFF'];
+  const FR_MONTHS = {
+    JANVIER:1,FEVRIER:2,'FÉVRIER':2,MARS:3,AVRIL:4,MAI:5,JUIN:6,
+    JUILLET:7,AOUT:8,'AOÛT':8,SEPTEMBRE:9,OCTOBRE:10,NOVEMBRE:11,
+    DECEMBRE:12,'DÉCEMBRE':12
+  };
+  const FR_LABELS = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
+
+  let charts = {};
+
+  // ──────────────────────────────────────────────
+  //  PERSISTENCE
+  // ──────────────────────────────────────────────
+  function save() { localStorage.setItem(SK, JSON.stringify(S.data)); }
+  function load() {
+    try {
+      const raw = localStorage.getItem(SK);
+      if (raw) {
+        S.data = JSON.parse(raw);
+        const ks = sortedKeys();
+        if (ks.length) S.activeMonth = ks[ks.length - 1];
+      }
+    } catch(e) {}
+  }
+  function sortedKeys() { return Object.keys(S.data).sort(); }
+
+  // ──────────────────────────────────────────────
+  //  EXCEL PARSING
+  // ──────────────────────────────────────────────
+  document.getElementById('file-input').addEventListener('change', function(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    e.target.value = '';
+    const reader = new FileReader();
+    reader.onload = ev => {
+      try {
+        const wb = XLSX.read(new Uint8Array(ev.target.result), { type:'array', cellDates:true });
+        const ws = wb.Sheets[wb.SheetNames[0]];
+        parseSheet(ws, file.name);
+      } catch(err) {
+        toast('❌ Erreur de lecture du fichier', 'error');
+      }
+    };
+    reader.readAsArrayBuffer(file);
+  });
+
+  function parseSheet(ws, fname) {
+    const rows = XLSX.utils.sheet_to_json(ws, { header:1, defval:null, raw:true });
+    let title = '', hdrIdx = -1;
+
+    for (let i = 0; i < rows.length; i++) {
+      const row = rows[i];
+      const nE = row.filter(c => c !== null && String(c).trim() !== '');
+      if (!nE.length) continue;
+      const first = String(nE[0]).toUpperCase().trim();
+      if ((first.includes('SUIVI') || first.includes('MOIS')) && hdrIdx === -1) { title = String(nE[0]); continue; }
+      if (row.some(c => c && String(c).toUpperCase().includes('LOCATAIRE'))) { hdrIdx = i; break; }
+    }
+
+    if (hdrIdx === -1) { toast('❌ Format non reconnu', 'error'); return; }
+
+    const hdrs = rows[hdrIdx].map(h => h ? String(h).trim().toUpperCase() : '');
+    const col = kw => hdrs.findIndex(h => h.includes(kw));
+    const C = {
+      loc:  col('LOCATAIRE'),
+      prop: col('PROPRIETAIRE'),
+      ville:col('VILLE'),
+      date: hdrs.findIndex(h => h.includes('DATE') || (h.includes('SORTIE') && !h.includes('LOCATAIRE'))),
+      edl:  hdrs.findIndex(h => h.includes('EDL')),
+      comp: col('COMPARATIF'),
+      dev:  col('DEVIS'),
+      cpte: hdrs.findIndex(h => h.includes('CPTE') || (h.includes('COMPTE') && h.includes('DEP'))),
+      rest: col('RESTITUTION'),
+    };
+    // Positional fallback
+    if (C.date < 0) C.date = 3;
+    if (C.edl  < 0) C.edl  = 4;
+    if (C.comp < 0) C.comp = 5;
+    if (C.dev  < 0) C.dev  = 6;
+    if (C.cpte < 0) C.cpte = 7;
+    if (C.rest < 0) C.rest = 8;
+
+    const dossiers = [];
+    for (let i = hdrIdx + 1; i < rows.length; i++) {
+      const row = rows[i];
+      if (!row || !row.length) continue;
+      const loc = row[C.loc] ? String(row[C.loc]).trim() : '';
+      if (!loc) continue;
+      dossiers.push({
+        id: `d-${Date.now()}-${i}`,
+        locataire:    loc,
+        proprietaire: row[C.prop]  ? String(row[C.prop]).trim()  : '',
+        ville:        row[C.ville] ? String(row[C.ville]).trim() : '',
+        dateSortie:   parseDate(row[C.date]),
+        flags: { vente: false, litige: false, conge: false },
+        steps: {
+          edlRecu:    parseStatus(row[C.edl]),
+          comparatif: parseStatus(row[C.comp]),
+          devis:      parseStatus(row[C.dev]),
+          cpteDepart: parseStatus(row[C.cpte]),
+          restitution:parseStatus(row[C.rest]),
+        }
+      });
+    }
+
+    if (!dossiers.length) { toast('⚠️ Aucun dossier trouvé', 'error'); return; }
+
+    const { key, label } = detectMonth(title, fname);
+    S.data[key] = { label, dossiers };
+    S.activeMonth = key;
+    save();
+    toast(`✅ ${dossiers.length} dossiers — ${label}`, 'success');
+    render();
+  }
+
+  function detectMonth(title, fname) {
+    const s = (title + ' ' + fname).toUpperCase();
+    let m = null, y = null;
+    for (const [name, num] of Object.entries(FR_MONTHS)) { if (s.includes(name)) { m = num; break; } }
+    const ym = s.match(/20\d{2}/);
+    if (ym) y = parseInt(ym[0]);
+    if (!m) m = new Date().getMonth() + 1;
+    if (!y) y = new Date().getFullYear();
+    const key   = `${y}-${String(m).padStart(2,'0')}`;
+    const label = `${FR_LABELS[m-1]} ${y}`;
+    return { key, label };
+  }
+
+  function parseDate(v) {
+    if (!v) return null;
+    // JS Date object via cellDates:true
+    if (v instanceof Date) {
+      const y = v.getUTCFullYear(), m = v.getUTCMonth()+1, d = v.getUTCDate();
+      return `${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    }
+    const s = String(v).trim();
+    if (!s) return null;
+    // dd/mm/yyyy
+    const dmy = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+    if (dmy) return `${dmy[3]}-${dmy[2].padStart(2,'0')}-${dmy[1].padStart(2,'0')}`;
+    // ISO
+    const iso = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+    if (iso) return `${iso[1]}-${iso[2]}-${iso[3]}`;
+    // Excel serial number fallback (UTC to avoid timezone shift)
+    const n = parseFloat(s);
+    if (!isNaN(n) && n > 40000) {
+      const ms = Math.round((n - 25569) * 86400000);
+      const d = new Date(ms);
+      return `${d.getUTCFullYear()}-${String(d.getUTCMonth()+1).padStart(2,'0')}-${String(d.getUTCDate()).padStart(2,'0')}`;
+    }
+    return null;
+  }
+
+  function parseStatus(v) {
+    if (v === null || v === undefined) return { done:false, note:null };
+    const s = String(v).trim();
+    if (!s) return { done:false, note:null };
+    const generic = /^[xX✓✔oO1yY]$/.test(s);
+    return { done:true, note: generic ? null : s };
+  }
+
+  // ──────────────────────────────────────────────
+  //  HELPERS
+  // ──────────────────────────────────────────────
+  function monthData() { return S.activeMonth ? S.data[S.activeMonth] : null; }
+  function progress(d) {
+    const done = STEPS.filter(s => d.steps[s.key]?.done || d.steps[s.key]?.nc).length;
+    return { done, total: STEPS.length, pct: Math.round(done / STEPS.length * 100) };
+  }
+  function overdueDeadline(d) {
+    const months = d.steps.devis?.nc ? 1 : 2;
+    const dl = new Date(d.dateSortie);
+    dl.setMonth(dl.getMonth() + months);
+    return dl;
+  }
+  function fmt(iso) {
+    if (!iso) return '—';
+    const [y,m,d] = iso.split('-');
+    return `${d}/${m}/${y}`;
+  }
+  function isOverdue(d) {
+    if (!d.dateSortie) return false;
+    const { done, total } = progress(d);
+    return done < total && overdueDeadline(d) < new Date();
+  }
+  function isSoon(d) {
+    if (!d.dateSortie) return false;
+    const { done, total } = progress(d);
+    if (done >= total) return false;
+    const days = (overdueDeadline(d) - new Date()) / 86400000;
+    return days >= 0 && days <= 7;
+  }
+  function allDossiers() { return Object.values(S.data).flatMap(m => m.dossiers); }
+  function findDossier(id) { return allDossiers().find(d => d.id === id); }
+
+  // ──────────────────────────────────────────────
+  //  NAVIGATION
+  // ──────────────────────────────────────────────
+  function setView(v) {
+    S.view = v;
+    document.getElementById('btn-dash').classList.toggle('active',  v === 'dashboard');
+    document.getElementById('btn-suivi').classList.toggle('active', v === 'suivi');
+    render();
+  }
+  function setMonth(key) { S.activeMonth = key; renderTabs(); render(); }
+  function delMonth(key, e) {
+    e.stopPropagation();
+    if (!confirm(`Supprimer "${S.data[key]?.label}" ?`)) return;
+    delete S.data[key];
+    const ks = sortedKeys();
+    S.activeMonth = ks.length ? ks[ks.length - 1] : null;
+    save();
+    renderTabs();
+    render();
+  }
+
+  // ──────────────────────────────────────────────
+  //  TABS
+  // ──────────────────────────────────────────────
+  function renderTabs() {
+    const el = document.getElementById('month-tabs');
+    const ks = sortedKeys();
+    if (!ks.length) {
+      el.innerHTML = '<span style="font-size:11px;color:var(--t3);padding:0 8px">Aucun mois importé</span>';
+      return;
+    }
+    el.innerHTML = ks.map(k => `
+      <button class="month-tab ${k === S.activeMonth ? 'active' : ''}" onclick="setMonth('${k}')">
+        ${S.data[k].label}
+        <span class="month-del" onclick="delMonth('${k}',event)" title="Supprimer">✕</span>
+      </button>`).join('');
+  }
+
+  // ──────────────────────────────────────────────
+  //  MAIN RENDER
+  // ──────────────────────────────────────────────
+  function render() {
+    renderTabs();
+    const md = monthData();
+    if (!md) { renderEmpty(); return; }
+    S.view === 'dashboard' ? renderDashboard(md) : renderSuivi(md);
+  }
+
+  function renderEmpty() {
+    document.getElementById('main-content').innerHTML = `
+      <div class="empty">
+        <div class="empty-icon">📂</div>
+        <div class="empty-title">Aucune donnée</div>
+        <div class="empty-sub">Importez votre fichier Excel mensuel pour démarrer le suivi des dossiers de sortie</div>
+        <button class="btn btn-primary" style="margin-top:18px" onclick="document.getElementById('file-input').click()">↑ Importer un fichier Excel</button>
+      </div>`;
+  }
+
+  // ──────────────────────────────────────────────
+  //  DASHBOARD
+  // ──────────────────────────────────────────────
+  function renderDashboard(md) {
+    const ds = md.dossiers;
+    const total  = ds.length;
+    const comp   = ds.filter(d => progress(d).done === STEPS.length).length;
+    const enCours= total - comp;
+    const taux   = total ? Math.round(comp / total * 100) : 0;
+    const stepCounts = STEPS.map(s => ds.filter(d => d.steps[s.key]?.done).length);
+    const overdue = ds.filter(isOverdue);
+    const soon    = ds.filter(d => !isOverdue(d) && isSoon(d));
+
+    const villes = {};
+    ds.forEach(d => { const v = d.ville||'N/A'; villes[v] = (villes[v]||0)+1; });
+
+    const kpiColor = taux === 100 ? 'var(--green)' : taux >= 50 ? 'var(--blue)' : 'var(--orange)';
+    const tauxDesc = taux === 0 ? 'Pas démarré' : taux < 40 ? 'En progression' : taux < 80 ? 'Bien avancé' : taux < 100 ? 'Presque terminé' : 'Bouclé ✨';
+
+    document.getElementById('main-content').innerHTML = `
+      <div class="kpi-grid">
+        ${kpi('📁', total, 'Dossiers', `${md.label}`, 'var(--blue)')}
+        ${kpi('⏳', enCours, 'En cours', overdue.length ? `⚠️ ${overdue.length} en retard` : 'Tout à jour', 'var(--orange)')}
+        ${kpi('✅', comp, 'Complétés', `${taux}% du total`, 'var(--green)')}
+        ${kpi('📊', taux+'%', "Taux d'avancement", tauxDesc, kpiColor)}
+      </div>
+
+      <div class="charts-grid">
+        <div class="card chart-card">
+          <div class="chart-title">Avancement par étape</div>
+          <div id="funnel"></div>
+        </div>
+        <div class="card chart-card">
+          <div class="chart-title">Répartition par ville</div>
+          <div style="position:relative;height:220px"><canvas id="chart-ville"></canvas></div>
+        </div>
+      </div>
+
+      ${overdue.length ? `
+      <div class="mb18">
+        <div class="section-header">
+          <div class="section-title" style="color:var(--red)">⚠️ Dossiers en retard</div>
+          <div class="badge" style="color:var(--red);border-color:rgba(255,69,58,0.35);background:rgba(255,69,58,0.1)">${overdue.length}</div>
+        </div>
+        <div class="dossier-grid">${overdue.map(d => cardHtml(d)).join('')}</div>
+      </div>` : ''}
+
+      ${soon.length ? `
+      <div class="mb18">
+        <div class="section-header">
+          <div class="section-title" style="color:var(--orange)">⏰ Échéance dans 7 jours</div>
+          <div class="badge" style="color:var(--orange);border-color:rgba(255,159,10,0.35);background:rgba(255,159,10,0.1)">${soon.length}</div>
+        </div>
+        <div class="dossier-grid">${soon.map(d => cardHtml(d)).join('')}</div>
+      </div>` : ''}
+
+      <div>
+        <div class="section-header">
+          <div class="section-title">Tous les dossiers</div>
+          <div class="badge">${total}</div>
+        </div>
+        <div class="dossier-grid">${ds.map(d => cardHtml(d)).join('')}</div>
+      </div>`;
+
+    // Funnel
+    document.getElementById('funnel').innerHTML = STEPS.map((s,i) => {
+      const n = stepCounts[i];
+      const pct = total ? (n/total)*100 : 0;
+      const c = STEP_COLORS[i];
+      return `<div class="step-row">
+        <div class="step-name">${s.full}</div>
+        <div class="step-bar-wrap">
+          <div class="step-bar" style="width:${pct}%;background:linear-gradient(90deg,${c},${c}88)">
+            ${pct > 12 ? `${n}/${total}` : ''}
+          </div>
+        </div>
+        <div class="step-count">${n}</div>
+      </div>`;
+    }).join('');
+
+    // City donut
+    if (charts.ville) charts.ville.destroy();
+    const cVille = document.getElementById('chart-ville');
+    if (cVille) {
+      const cols = ['#007AFF','#BF5AF2','#30D158','#FF9F0A','#FF453A','#64D2FF','#FFD60A','#FF6B6B'];
+      charts.ville = new Chart(cVille, {
+        type: 'doughnut',
+        data: {
+          labels: Object.keys(villes),
+          datasets: [{ data: Object.values(villes),
+            backgroundColor: cols.slice(0,Object.keys(villes).length).map(c=>c+'BB'),
+            borderColor:     cols.slice(0,Object.keys(villes).length),
+            borderWidth: 2, hoverOffset: 8
+          }]
+        },
+        options: {
+          responsive:true, maintainAspectRatio:false, cutout:'63%',
+          plugins: {
+            legend: { position:'right', labels:{ color:'rgba(255,255,255,0.65)', font:{size:11,family:'Inter'}, padding:10, boxWidth:11, boxHeight:11 } },
+            tooltip: {
+              callbacks: { label: ctx => ` ${ctx.label}: ${ctx.raw}` },
+              backgroundColor:'rgba(14,14,30,0.92)', titleColor:'rgba(255,255,255,0.9)',
+              bodyColor:'rgba(255,255,255,0.65)', borderColor:'rgba(255,255,255,0.12)',
+              borderWidth:1, cornerRadius:10
+            }
+          }
+        }
+      });
+    }
+  }
+
+  function kpi(icon, val, lbl, sub, color) {
+    return `<div class="card kpi-card" style="border-top:3px solid ${color}33">
+      <div class="kpi-icon">${icon}</div>
+      <div class="kpi-value" style="color:${color}">${val}</div>
+      <div class="kpi-label">${lbl}</div>
+      ${sub ? `<div class="kpi-sub">${sub}</div>` : ''}
+    </div>`;
+  }
+
+  // ──────────────────────────────────────────────
+  //  DOSSIER CARD
+  // ──────────────────────────────────────────────
+  function cardHtml(d) {
+    const { done, total, pct } = progress(d);
+    const ov = isOverdue(d), sn = isSoon(d);
+    const dCls = ov ? 'overdue' : sn ? 'soon' : '';
+    const stepsHtml = STEPS.map(s => {
+      const st = d.steps[s.key];
+      const isDone = st?.done, note = st?.note;
+      const cls  = stepClass(st);
+      const tip  = note ? ` data-tip="${note.replace(/"/g,'&quot;').replace(/'/g,'&#39;')}"` : '';
+      const isNC = st?.nc;
+      const icon = isNC ? 'NC' : isDone ? '✓' : note ? '📝' : '';
+      return `<div class="step-item ${cls}"${tip}>
+        <div class="step-connector"></div>
+        <div class="step-dot">${icon}</div>
+        <div class="step-lbl">${s.lbl}</div>
+      </div>`;
+    }).join('');
+
+    return `<div class="card dossier-card" data-id="${d.id}">
+      <div class="dossier-header">
+        <div>
+          <div class="dossier-name">${d.locataire}</div>
+          <div class="dossier-meta"><span class="flags-inline">${flagIcons(d)}</span>${d.proprietaire}${d.ville ? ' · '+d.ville : ''}</div>
+        </div>
+        ${d.dateSortie ? `<div class="dossier-date ${dCls}">${ov?'⚠️ ':sn?'⏰ ':''}${fmt(d.dateSortie)}</div>` : ''}
+      </div>
+      <div class="steps-track">${stepsHtml}</div>
+      <div class="prog-wrap"><div class="prog-bar ${done===total?'done':''}" style="width:${pct}%"></div></div>
+    </div>`;
+  }
+
+  // ──────────────────────────────────────────────
+  //  SUIVI DÉTAILLÉ
+  // ──────────────────────────────────────────────
+  function renderSuivi(md) {
+    const villes = [...new Set(md.dossiers.map(d => d.ville).filter(Boolean))];
+    document.getElementById('main-content').innerHTML = `
+      <div class="search-bar">
+        <span style="font-size:15px;color:var(--t3)">🔍</span>
+        <input class="search-input" id="srch" placeholder="Locataire, propriétaire, ville…" value="${S.filter}">
+        ${S.filter ? `<button class="btn" style="padding:3px 9px;font-size:11px" id="srch-clear">✕</button>` : ''}
+      </div>
+      <div class="filter-row">
+        ${['all:Tous','en-cours:En cours','complet:Complétés','retard:⚠️ En retard'].map(fc => {
+          const [k,l] = fc.split(':'); return `<div class="chip ${S.filterStatus===k?'active':''}" data-fs="${k}">${l}</div>`;
+        }).join('')}
+        ${villes.map(v => `<div class="chip ${S.filterStatus==='v:'+v?'active':''}" data-fs="v:${v}">📍 ${v}</div>`).join('')}
+      </div>
+      <div id="dossier-list"></div>`;
+
+    document.getElementById('srch').addEventListener('input', e => { S.filter = e.target.value; showFiltered(md.dossiers); });
+    const sc = document.getElementById('srch-clear');
+    if (sc) sc.addEventListener('click', () => { S.filter = ''; renderSuivi(md); });
+    document.querySelectorAll('[data-fs]').forEach(el => {
+      el.addEventListener('click', () => { S.filterStatus = el.dataset.fs; renderSuivi(md); });
+    });
+
+    showFiltered(md.dossiers);
+  }
+
+  function showFiltered(ds) {
+    const el = document.getElementById('dossier-list');
+    if (!el) return;
+    let f = ds;
+    if (S.filter) {
+      const q = S.filter.toLowerCase();
+      f = f.filter(d => d.locataire.toLowerCase().includes(q) || d.proprietaire.toLowerCase().includes(q) || d.ville.toLowerCase().includes(q));
+    }
+    if (S.filterStatus === 'en-cours') f = f.filter(d => progress(d).done < STEPS.length);
+    else if (S.filterStatus === 'complet') f = f.filter(d => progress(d).done === STEPS.length);
+    else if (S.filterStatus === 'retard') f = f.filter(isOverdue);
+    else if (S.filterStatus.startsWith('v:')) { const v = S.filterStatus.slice(2); f = f.filter(d => d.ville === v); }
+
+    if (!f.length) {
+      el.innerHTML = `<div class="empty"><div class="empty-icon">🔍</div><div class="empty-title">Aucun résultat</div><div class="empty-sub">Essayez d'autres critères</div></div>`;
+      return;
+    }
+    el.innerHTML = `<div class="dossier-grid">${f.map(d => cardHtml(d)).join('')}</div>`;
+  }
+
+  // ──────────────────────────────────────────────
+  //  MODAL
+  // ──────────────────────────────────────────────
+  document.getElementById('main-content').addEventListener('click', e => {
+    const card = e.target.closest('.dossier-card');
+    if (card) openModal(card.dataset.id);
+  });
+
+  function openModal(id) {
+    const d = findDossier(id);
+    if (!d) return;
+    const { done, total, pct } = progress(d);
+    const mLabel = Object.entries(S.data).find(([,v]) => v.dossiers.some(x => x.id === id))?.[1]?.label || '';
+
+    document.getElementById('modal-title').textContent = d.locataire;
+    document.getElementById('modal-sub').textContent   = [d.proprietaire, d.ville, mLabel].filter(Boolean).join(' · ');
+    document.getElementById('modal-body').innerHTML = `
+      <div class="modal-info">
+        <div><div class="info-lbl">Propriétaire</div><div class="info-val">${d.proprietaire||'—'}</div></div>
+        <div><div class="info-lbl">Ville</div><div class="info-val">${d.ville||'—'}</div></div>
+        <div><div class="info-lbl">Date de sortie</div><div class="info-val">${fmt(d.dateSortie)}</div></div>
+        <div><div class="info-lbl">Avancement</div><div class="info-val" style="color:${done===total?'var(--green)':'var(--orange)'}">${done}/${total} — ${pct}%</div></div>
+      </div>
+      <div class="modal-flags-section">
+        <div class="info-lbl">Statuts propriétaire</div>
+        <div class="flags-toggle-row">${buildFlagsHtml(d)}</div>
+      </div>
+      <div class="modal-steps-title" style="display:flex;justify-content:space-between;align-items:center">
+        <span>Étapes du dossier</span>
+        <span style="font-size:9px;color:var(--t3);font-weight:500;text-transform:none;letter-spacing:0">Cliquez pour cocher · maintenez pour annoter</span>
+      </div>
+      <div class="modal-steps" id="modal-steps-list">
+        ${buildStepsHtml(d)}
+      </div>`;
+
+    document.getElementById('modal-del').dataset.did = d.id;
+    document.getElementById('modal-overlay').classList.add('open');
+    bindStepClicks(d.id);
+    bindFlagClicks(d.id);
+  }
+
+  function deleteDossier(id) {
+    for (const [monthKey, md] of Object.entries(S.data)) {
+      const idx = md.dossiers.findIndex(d => d.id === id);
+      if (idx !== -1) {
+        md.dossiers.splice(idx, 1);
+        if (!md.dossiers.length) delete S.data[monthKey];
+        break;
+      }
+    }
+    save();
+    document.getElementById('modal-overlay').classList.remove('open');
+    const keys = sortedKeys();
+    if (!keys.includes(S.activeMonth)) S.activeMonth = keys[keys.length - 1] ?? null;
+    render();
+    toast('🗑 Dossier supprimé');
+  }
+
+  function stepClass(st) {
+    if (st?.nc)                     return 'nc';
+    const isDone = st?.done, hasNote = st?.note;
+    if (isDone && hasNote) return 'noted';
+    if (isDone)            return 'done';
+    if (hasNote)           return 'note-only';
+    return '';
+  }
+  function stepStatus(st) {
+    if (st?.nc) return 'Non concerné';
+    const isDone = st?.done, note = st?.note;
+    if (isDone && note) return `📝 ${note}`;
+    if (isDone)         return 'Complété';
+    if (note)           return `📝 ${note}`;
+    return 'En attente';
+  }
+
+  function buildStepsHtml(d) {
+    return STEPS.map(s => {
+      const st = d.steps[s.key];
+      const cls = stepClass(st);
+      const note = st?.note || '';
+      return `<div class="modal-step ${cls}" data-step="${s.key}" data-did="${d.id}">
+        <div class="ms-row">
+          <div class="ms-icon">${s.icon}</div>
+          <div class="ms-info">
+            <div class="ms-name">${s.full}</div>
+            <div class="ms-status">${stepStatus(st)}</div>
+          </div>
+          ${s.key === 'devis' ? `<button class="ms-nc-btn ${st?.nc ? 'active' : ''}" data-nc-btn title="Non concerné — délai retard : 1 mois">NC</button>` : ''}
+          <button class="ms-note-btn ${note ? 'active' : ''}" data-note-btn title="Annoter">✏️</button>
+          <div class="ms-check">${st?.nc ? '—' : st?.done ? '✅' : '○'}</div>
+        </div>
+        <div class="ms-note-area ${note ? 'open' : ''}">
+          <input class="modal-step-note-input" placeholder="Annotation (sans valider l'étape)…" value="${note.replace(/"/g,'&quot;')}">
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  function bindStepClicks(dossierId) {
+    document.querySelectorAll('#modal-steps-list .modal-step').forEach(el => {
+      const stepKey = el.dataset.step;
+
+      // Click on .ms-row (but not note/nc btn) → toggle done
+      el.querySelector('.ms-row').addEventListener('click', e => {
+        if (e.target.closest('[data-note-btn]')) return;
+        if (e.target.closest('[data-nc-btn]'))   return;
+        toggleStep(dossierId, stepKey);
+      });
+
+      // NC button (Devis only)
+      const ncBtn = el.querySelector('[data-nc-btn]');
+      if (ncBtn) {
+        ncBtn.addEventListener('click', e => {
+          e.stopPropagation();
+          toggleNC(dossierId);
+        });
+      }
+
+      // Note button → toggle note area visibility
+      el.querySelector('[data-note-btn]').addEventListener('click', e => {
+        e.stopPropagation();
+        const area = el.querySelector('.ms-note-area');
+        const btn  = el.querySelector('.ms-note-btn');
+        const open = area.classList.toggle('open');
+        btn.classList.toggle('active', open);
+        if (open) el.querySelector('.modal-step-note-input').focus();
+      });
+
+      // Note input: save on blur/Enter
+      const ni = el.querySelector('.modal-step-note-input');
+      ni.addEventListener('click',  e => e.stopPropagation());
+      ni.addEventListener('keydown', e => { if (e.key === 'Enter') ni.blur(); });
+      ni.addEventListener('blur', () => saveNote(dossierId, stepKey, ni.value));
+    });
+  }
+
+  function toggleStep(dossierId, stepKey) {
+    const d = findDossier(dossierId);
+    if (!d) return;
+    const st = d.steps[stepKey];
+    // Si NC actif, un clic sur done désactive NC
+    d.steps[stepKey] = { done: !st?.done, note: st?.note || null, nc: false };
+    save();
+    refreshModal(dossierId);
+    refreshCard(dossierId);
+  }
+
+  /* ── Flags ────────────────────────────────────────── */
+  function flagIcons(d) {
+    const active = FLAGS.filter(f => d.flags?.[f.key]);
+    if (!active.length) return '';
+    return active.map(f => `<span class="flag-icon" title="${f.label}">${f.icon}</span>`).join('');
+  }
+
+  function buildFlagsHtml(d) {
+    return FLAGS.map(f => {
+      const on = d.flags?.[f.key];
+      return `<button class="flag-toggle-btn ${on ? 'active-'+f.cls : ''}" data-flag="${f.key}" title="${f.label}">${f.icon} ${f.label}</button>`;
+    }).join('');
+  }
+
+  function toggleFlag(dossierId, flagKey) {
+    const d = findDossier(dossierId);
+    if (!d) return;
+    if (!d.flags) d.flags = { vente: false, litige: false, conge: false };
+    d.flags[flagKey] = !d.flags[flagKey];
+    save();
+    refreshModal(dossierId);
+    refreshCard(dossierId);
+  }
+
+  function bindFlagClicks(dossierId) {
+    document.querySelectorAll('[data-flag]').forEach(btn => {
+      btn.addEventListener('click', e => {
+        e.stopPropagation();
+        toggleFlag(dossierId, btn.dataset.flag);
+      });
+    });
+  }
+  /* ─────────────────────────────────────────────────── */
+
+  function toggleNC(dossierId) {
+    const d = findDossier(dossierId);
+    if (!d) return;
+    const st = d.steps.devis;
+    const wasNC = st?.nc;
+    // NC et done sont mutuellement exclusifs
+    d.steps.devis = { done: false, note: st?.note || null, nc: !wasNC };
+    save();
+    refreshModal(dossierId);
+    refreshCard(dossierId);
+  }
+
+  function saveNote(dossierId, stepKey, note) {
+    const d = findDossier(dossierId);
+    if (!d) return;
+    const st = d.steps[stepKey];
+    const trimmed = note.trim();
+    d.steps[stepKey] = { done: st?.done ?? false, note: trimmed || null, nc: st?.nc ?? false };
+    save();
+    refreshModal(dossierId);
+    refreshCard(dossierId);
+  }
+
+  function refreshModal(dossierId) {
+    const d = findDossier(dossierId);
+    if (!d) return;
+    const { done, total, pct } = progress(d);
+    const mLabel = Object.entries(S.data).find(([,v]) => v.dossiers.some(x => x.id === dossierId))?.[1]?.label || '';
+    document.getElementById('modal-body').innerHTML = `
+      <div class="modal-info">
+        <div><div class="info-lbl">Propriétaire</div><div class="info-val">${d.proprietaire||'—'}</div></div>
+        <div><div class="info-lbl">Ville</div><div class="info-val">${d.ville||'—'}</div></div>
+        <div><div class="info-lbl">Date de sortie</div><div class="info-val">${fmt(d.dateSortie)}</div></div>
+        <div><div class="info-lbl">Avancement</div><div class="info-val" style="color:${done===total?'var(--green)':'var(--orange)'}">${done}/${total} — ${pct}%</div></div>
+      </div>
+      <div class="modal-flags-section">
+        <div class="info-lbl">Statuts propriétaire</div>
+        <div class="flags-toggle-row">${buildFlagsHtml(d)}</div>
+      </div>
+      <div class="modal-steps-title" style="display:flex;justify-content:space-between;align-items:center">
+        <span>Étapes du dossier</span>
+        <span style="font-size:9px;color:var(--t3);font-weight:500;text-transform:none;letter-spacing:0">Cliquez pour cocher · maintenez pour annoter</span>
+      </div>
+      <div class="modal-steps" id="modal-steps-list">${buildStepsHtml(d)}</div>`;
+    bindStepClicks(dossierId);
+    bindFlagClicks(dossierId);
+  }
+
+  function refreshCard(dossierId) {
+    const card = document.querySelector(`.dossier-card[data-id="${dossierId}"]`);
+    if (!card) return;
+    const d = findDossier(dossierId);
+    if (!d) return;
+    const tmp = document.createElement('div');
+    tmp.innerHTML = cardHtml(d);
+    card.replaceWith(tmp.firstElementChild);
+  }
+
+  document.getElementById('modal-overlay').addEventListener('click', e => {
+    if (e.target === document.getElementById('modal-overlay'))
+      document.getElementById('modal-overlay').classList.remove('open');
+  });
+  document.getElementById('modal-close').addEventListener('click', () =>
+    document.getElementById('modal-overlay').classList.remove('open'));
+  document.getElementById('modal-del').addEventListener('click', () => {
+    const id = document.getElementById('modal-del').dataset.did;
+    if (!id) return;
+    if (!confirm(`Supprimer le dossier "${findDossier(id)?.locataire}" ?`)) return;
+    deleteDossier(id);
+  });
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') document.getElementById('modal-overlay').classList.remove('open');
+  });
+
+  // ──────────────────────────────────────────────
+  //  TOAST
+  // ──────────────────────────────────────────────
+  let toastTimer;
+  function toast(msg, type = 'success') {
+    const el = document.getElementById('toast');
+    el.textContent = msg; el.className = `toast ${type} show`;
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => el.classList.remove('show'), 3400);
+  }
+
+  // ──────────────────────────────────────────────
+  //  INIT
+  // ──────────────────────────────────────────────
+  load();
+  render();
+  </script>
+</body>
+</html>
