@@ -12,6 +12,7 @@
 - **Option NC (Non Concerné)** sur l'étape Devis — adapte automatiquement le délai de retard (1 mois si NC, 2 mois sinon)
 - **Annotations** — annotez chaque étape sans la valider, avec affichage en bulle au survol
 - **Statuts propriétaire** — indicateurs visuels 💰 En vente · ⚖️ Litige · 🔑 Congé affichés directement sur chaque carte
+- **GLI Verlingue** — badge togglable sur chaque carte et dans le modal de détail ; affiche le logo Verlingue sur la carte quand activé
 - **Alertes automatiques** — badge ⚠️ En retard et ⏰ Bientôt selon les délais calculés
 - **Suppression manuelle** de dossiers
 - **Sauvegarde / Restauration JSON** — exportez toutes vos données et restaurez-les sans perte
