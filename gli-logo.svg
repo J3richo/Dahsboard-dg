@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 90">
+  <defs>
+    <linearGradient id="wL" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#1A3A8A"/>
+      <stop offset="100%" stop-color="#7BB8E0"/>
+    </linearGradient>
+    <linearGradient id="wR" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#7BB8E0"/>
+      <stop offset="100%" stop-color="#1A3A8A"/>
+    </linearGradient>
+  </defs>
+  <!-- Left wing -->
+  <path d="M88 6 C104 6 118 16 124 32 C118 48 104 58 88 58 C100 58 114 46 114 32 C114 18 100 6 88 6Z" fill="url(#wL)"/>
+  <!-- Right wing -->
+  <path d="M168 6 C152 6 138 16 132 32 C138 48 152 58 168 58 C156 58 142 46 142 32 C142 18 156 6 168 6Z" fill="url(#wR)"/>
+  <!-- VERLINGUE text -->
+  <text x="128" y="82" font-size="22" font-weight="900" fill="#002366" text-anchor="middle"
+        font-family="'Arial Black','Arial',sans-serif" letter-spacing="4">VERLINGUE</text>
+</svg>

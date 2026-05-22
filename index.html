@@ -161,6 +161,24 @@
     .dossier-date.overdue { border-color: rgba(255,69,58,0.5); color: var(--red); background: rgba(255,69,58,0.1); }
     .dossier-date.soon   { border-color: rgba(255,159,10,0.5); color: var(--orange); background: rgba(255,159,10,0.1); }
 
+    /* GLI */
+    .gli-btn {
+      display: inline-flex; align-items: center; gap: 5px;
+      padding: 3px 9px; border-radius: 20px; font-size: 9px; font-weight: 700;
+      border: 1px solid rgba(255,255,255,0.12); background: rgba(255,255,255,0.04);
+      color: var(--t3); cursor: pointer; text-transform: uppercase; letter-spacing: 0.6px;
+      transition: all 0.2s; flex-shrink: 0;
+    }
+    .gli-btn:hover { border-color: rgba(37,99,235,0.45); color: #60A5FA; }
+    .gli-btn.active {
+      border-color: rgba(37,99,235,0.7); color: #93C5FD;
+      background: rgba(37,99,235,0.13); box-shadow: 0 0 8px rgba(37,99,235,0.25);
+    }
+    .gli-dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; opacity: 0.5; }
+    .gli-btn.active .gli-dot { opacity: 1; background: #3B82F6; box-shadow: 0 0 4px #3B82F6; }
+    .gli-logo { height: 14px; width: auto; vertical-align: middle; margin-right: 3px; object-fit: contain; }
+    .dossier-card-footer { display: flex; justify-content: flex-end; margin-top: 9px; }
+
     /* STEPS TRACK */
     .steps-track { display: flex; align-items: flex-start; position: relative; }
     .step-item { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px; position: relative; }
@@ -561,6 +579,7 @@
         proprietaire: row[C.prop]  ? String(row[C.prop]).trim()  : '',
         ville:        row[C.ville] ? String(row[C.ville]).trim() : '',
         dateSortie:   parseDate(row[C.date]),
+        gli: false,
         flags: { vente: false, litige: false, conge: false },
         steps: {
           edlRecu:    parseStatus(row[C.edl]),
@@ -861,16 +880,20 @@
       </div>`;
     }).join('');
 
+    const gliLogo = d.gli ? `<img class="gli-logo" src="gli-logo.svg" alt="Verlingue GLI">` : '';
     return `<div class="card dossier-card" data-id="${d.id}">
       <div class="dossier-header">
         <div>
-          <div class="dossier-name">${d.locataire}</div>
+          <div class="dossier-name">${gliLogo}${d.locataire}</div>
           <div class="dossier-meta"><span class="flags-inline">${flagIcons(d)}</span>${d.proprietaire}${d.ville ? ' · '+d.ville : ''}</div>
         </div>
         ${d.dateSortie ? `<div class="dossier-date ${dCls}">${ov?'⚠️ ':sn?'⏰ ':''}${fmt(d.dateSortie)}</div>` : ''}
       </div>
       <div class="steps-track">${stepsHtml}</div>
       <div class="prog-wrap"><div class="prog-bar ${done===total?'done':''}" style="width:${pct}%"></div></div>
+      <div class="dossier-card-footer">
+        <button class="gli-btn${d.gli ? ' active' : ''}" data-gli="${d.id}"><span class="gli-dot"></span>GLI</button>
+      </div>
     </div>`;
   }
 
@@ -927,6 +950,8 @@
   //  MODAL
   // ──────────────────────────────────────────────
   document.getElementById('main-content').addEventListener('click', e => {
+    const gliBtn = e.target.closest('[data-gli]');
+    if (gliBtn) { e.stopPropagation(); toggleGli(gliBtn.dataset.gli); return; }
     const card = e.target.closest('.dossier-card');
     if (card) openModal(card.dataset.id);
   });
@@ -1091,6 +1116,14 @@
     d.flags[flagKey] = !d.flags[flagKey];
     save();
     refreshModal(dossierId);
+    refreshCard(dossierId);
+  }
+
+  function toggleGli(dossierId) {
+    const d = findDossier(dossierId);
+    if (!d) return;
+    d.gli = !d.gli;
+    save();
     refreshCard(dossierId);
   }
 
