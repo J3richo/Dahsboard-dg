@@ -315,6 +315,7 @@
     .flag-toggle-btn.active-vente  { background: rgba(48,209,88,0.18);  border-color: rgba(48,209,88,0.5);  color: var(--green);  }
     .flag-toggle-btn.active-litige { background: rgba(255,69,58,0.18);  border-color: rgba(255,69,58,0.5);  color: var(--red);    }
     .flag-toggle-btn.active-conge  { background: rgba(255,159,10,0.18); border-color: rgba(255,159,10,0.5); color: var(--orange); }
+    .flag-toggle-btn.active-gli    { background: rgba(59,130,246,0.18);  border-color: rgba(59,130,246,0.5);  color: #60A5FA; }
     /* ────────────────────────────────────────────────── */
     /* Tooltip on card step dots */
     .step-item[data-tip] { position: relative; }
@@ -1103,10 +1104,13 @@
   }
 
   function buildFlagsHtml(d) {
-    return FLAGS.map(f => {
+    const flagBtns = FLAGS.map(f => {
       const on = d.flags?.[f.key];
       return `<button class="flag-toggle-btn ${on ? 'active-'+f.cls : ''}" data-flag="${f.key}" title="${f.label}">${f.icon} ${f.label}</button>`;
     }).join('');
+    const gliOn = d.gli;
+    const gliBadge = `<button class="flag-toggle-btn ${gliOn ? 'active-gli' : ''}" data-modal-gli title="GLI Verlingue"><span class="gli-dot" style="display:inline-block;width:6px;height:6px;border-radius:50%;background:currentColor;opacity:${gliOn?1:0.5};margin-right:3px"></span>GLI</button>`;
+    return flagBtns + gliBadge;
   }
 
   function toggleFlag(dossierId, flagKey) {
@@ -1125,6 +1129,7 @@
     d.gli = !d.gli;
     save();
     refreshCard(dossierId);
+    refreshModal(dossierId);
   }
 
   function bindFlagClicks(dossierId) {
@@ -1132,6 +1137,12 @@
       btn.addEventListener('click', e => {
         e.stopPropagation();
         toggleFlag(dossierId, btn.dataset.flag);
+      });
+    });
+    document.querySelectorAll('[data-modal-gli]').forEach(btn => {
+      btn.addEventListener('click', e => {
+        e.stopPropagation();
+        toggleGli(dossierId);
       });
     });
   }
