@@ -430,6 +430,8 @@
           <button class="view-btn active" id="btn-dash" onclick="setView('dashboard')">Tableau de bord</button>
           <button class="view-btn" id="btn-suivi" onclick="setView('suivi')">Suivi détaillé</button>
         </div>
+        <button class="btn" onclick="exportData()" title="Sauvegarder toutes les données en JSON">💾 Sauvegarder</button>
+        <button class="btn" onclick="document.getElementById('json-input').click()" title="Restaurer depuis une sauvegarde JSON">📥 Restaurer</button>
         <button class="btn btn-primary" onclick="document.getElementById('file-input').click()">↑ Importer</button>
       </div>
     </nav>
@@ -455,6 +457,7 @@
 
   <div class="toast" id="toast"></div>
   <input type="file" id="file-input" accept=".xlsx,.xls">
+  <input type="file" id="json-input"  accept=".json">
 
   <!-- CDN Libraries -->
   <script src="https://unpkg.com/xlsx/dist/xlsx.full.min.js"></script>
@@ -500,6 +503,51 @@
   //  PERSISTENCE
   // ──────────────────────────────────────────────
   function save() { localStorage.setItem(SK, JSON.stringify(S.data)); }
+
+  function exportData() {
+    const now = new Date();
+    const ts  = `${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}_${String(now.getHours()).padStart(2,'0')}${String(now.getMinutes()).padStart(2,'0')}`;
+    const blob = new Blob([JSON.stringify(S.data, null, 2)], { type:'application/json' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `suivi_sorties_backup_${ts}.json`;
+    a.click();
+    URL.revokeObjectURL(a.href);
+    toast('💾 Sauvegarde téléchargée', 'success');
+  }
+
+  function importJSON(file) {
+    const reader = new FileReader();
+    reader.onload = ev => {
+      let imported;
+      try { imported = JSON.parse(ev.target.result); }
+      catch { toast('❌ Fichier JSON invalide', 'error'); return; }
+      if (typeof imported !== 'object' || Array.isArray(imported)) {
+        toast('❌ Format de sauvegarde non reconnu', 'error'); return;
+      }
+      let added = 0, skipped = 0;
+      for (const [monthKey, monthData] of Object.entries(imported)) {
+        if (S.data[monthKey]) { skipped++; }
+        else { S.data[monthKey] = monthData; added++; }
+      }
+      save();
+      const ks = sortedKeys();
+      if (!S.activeMonth || !ks.includes(S.activeMonth)) S.activeMonth = ks[ks.length-1] ?? null;
+      render();
+      if (added === 0 && skipped > 0)
+        toast(`ℹ️ Aucun nouveau mois — ${skipped} mois déjà présent${skipped>1?'s':''}`, 'info');
+      else
+        toast(`✅ ${added} mois restauré${added>1?'s':''}${skipped ? ` · ${skipped} mois existant${skipped>1?'s':''} conservé${skipped>1?'s':''}` : ''}`, 'success');
+    };
+    reader.readAsText(file);
+  }
+
+  document.getElementById('json-input').addEventListener('change', function(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    e.target.value = '';
+    importJSON(file);
+  });
   function load() {
     try {
       const raw = localStorage.getItem(SK);
