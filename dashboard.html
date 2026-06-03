@@ -483,7 +483,18 @@
   // ──────────────────────────────────────────────
   //  PERSISTENCE
   // ──────────────────────────────────────────────
-  function save() { localStorage.setItem(SK, JSON.stringify(S.data)); }
+  let _saveTimer;
+  function save() {
+    localStorage.setItem(SK, JSON.stringify(S.data));
+    clearTimeout(_saveTimer);
+    _saveTimer = setTimeout(() => {
+      fetch('/api/save', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(S.data)
+      }).catch(() => {});
+    }, 500);
+  }
 
   // ── Export / Import sauvegarde JSON ───────────────
   function exportData() {
@@ -1249,8 +1260,23 @@
   // ──────────────────────────────────────────────
   //  INIT
   // ──────────────────────────────────────────────
-  load();
-  render();
+  async function init() {
+    load();
+    try {
+      const r = await fetch('/api/data');
+      if (r.ok) {
+        const data = await r.json();
+        if (data && typeof data === 'object' && !Array.isArray(data) && Object.keys(data).length) {
+          S.data = data;
+          localStorage.setItem(SK, JSON.stringify(data));
+          const ks = sortedKeys();
+          if (ks.length) S.activeMonth = ks[ks.length - 1];
+        }
+      }
+    } catch {}
+    render();
+  }
+  init();
   </script>
 </body>
 </html>
